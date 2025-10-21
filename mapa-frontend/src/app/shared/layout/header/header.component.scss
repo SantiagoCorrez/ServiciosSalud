@@ -1,0 +1,10 @@
+:host { display:block; }
+.gov-header { padding: .5rem 0; }
+.gov-logo { width:48px; height:48px; object-fit:contain; }
+.gov-title { font-weight:700; font-size:1rem; }
+.gov-subtitle { font-size:.85rem; color: #6c757d; }
+
+@media (max-width: 767px) {
+	.gov-title { font-size: .95rem; }
+	.gov-subtitle { display:none; }
+}

@@ -1,0 +1,31 @@
+<div class="container d-flex align-items-center justify-content-center" style="min-height:60vh">
+  <div class="row w-100">
+    <div class="col-12 col-md-6 offset-md-3">
+      <mat-card class="p-3">
+        <mat-card-header>
+          <mat-card-title class="h4">Iniciar Sesión</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+              <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Correo Electrónico</mat-label>
+                <input matInput formControlName="email" type="email" placeholder="admin@mapa.com">
+              </mat-form-field>
+            </div>
+            <div class="mb-3">
+              <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Contraseña</mat-label>
+                <input matInput formControlName="password" type="password">
+              </mat-form-field>
+            </div>
+            <div class="d-flex gap-2">
+              <button mat-raised-button color="primary" type="submit" [disabled]="!loginForm.valid">Ingresar</button>
+              <a class="btn btn-link ms-auto" routerLink="/public/signup">Regístrate</a>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

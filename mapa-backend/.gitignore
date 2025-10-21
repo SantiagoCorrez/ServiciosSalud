@@ -1,0 +1,61 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnp/
+.pnp.js
+.yarn-integrity
+.npm/
+
+# Runtime data
+logs
+*.log
+pids
+*.pid
+*.seed
+*.pid.lock
+.node_repl_history
+
+# Build / output
+dist/
+build/
+out/
+coverage/
+.nyc_output
+lib-cov
+*.tgz
+
+# Optional caches
+.cache/
+.parcel-cache/
+.fusebox/
+
+# Env files
+.env
+.env.*.local
+
+# Next / Nuxt / Gatsby / VuePress
+.next/
+.nuxt/
+public/
+.vuepress/dist/
+.cache/
+
+# Serverless / DynamoDB Local
+.serverless/
+.dynamodb/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.DS_Store
+
+# Misc
+.lock-wscript
+bower_components/

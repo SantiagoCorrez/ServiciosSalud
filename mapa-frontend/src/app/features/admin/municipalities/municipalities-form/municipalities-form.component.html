@@ -1,0 +1,29 @@
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12 col-md-8 offset-md-2">
+      <div class="card p-3">
+        <h2 class="h5">{{ id ? 'Editar Municipio' : 'Nuevo Municipio' }}</h2>
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <mat-form-field appearance="fill" class="w-100 mb-3">
+            <mat-label>Nombre</mat-label>
+            <input matInput formControlName="name">
+            <mat-error *ngIf="form.controls['name'].hasError('required')">El nombre es obligatorio</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="w-100 mb-3">
+            <mat-label>Región de Salud</mat-label>
+            <mat-select formControlName="HealthRegionId">
+              <mat-option *ngFor="let h of healthRegions" [value]="h.id">{{ h.name }}</mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.controls['HealthRegionId'].hasError('required')">Seleccione una región</mat-error>
+          </mat-form-field>
+
+          <div class="d-flex gap-2">
+            <button mat-raised-button color="primary" type="submit">Guardar</button>
+            <button mat-button type="button" (click)="router.navigate(['/admin/municipalities'])">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

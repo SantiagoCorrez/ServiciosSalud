@@ -1,0 +1,14 @@
+// Small visual adjustments to harmonize Bootstrap layout with Angular Material components
+
+// Cards
+.card { border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+
+// Make mat-form-field take full width by default inside our wrappers
+mat-form-field.w-100, .mat-form-field.w-100 { width: 100%; }
+
+/* Small helpers */
+.h4 { font-size: 1.25rem; }
+.gap-2 { gap: .5rem; }
+
+// Table responsiveness
+.mat-elevation-z8.w-100 { width: 100%; }

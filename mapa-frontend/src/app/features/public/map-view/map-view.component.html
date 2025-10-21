@@ -1,0 +1,44 @@
+<div class="map-controls container mb-2">
+	<div class="row g-2 align-items-end">
+		<div class="col-md-3">
+			<label>Región de salud</label>
+			<input class="form-control mb-1" placeholder="Buscar región..." [(ngModel)]="search.region" (input)="updateFilteredLists()" />
+			<select class="form-select" [(ngModel)]="filters.healthRegionId" (change)="onRegionChange()">
+				<option [ngValue]="null">Todas</option>
+				<option *ngFor="let r of healthRegionsFiltered" [ngValue]="r.id">{{ r.name }}</option>
+			</select>
+		</div>
+		<div class="col-md-3">
+			<label>Municipio</label>
+			<input class="form-control mb-1" placeholder="Buscar municipio..." [(ngModel)]="search.municipality" (input)="updateFilteredLists()" />
+			<select class="form-select" [(ngModel)]="filters.municipalityId" (change)="onMunicipalityChange()">
+				<option [ngValue]="null">Todos</option>
+				<option *ngFor="let m of municipalitiesFiltered" [ngValue]="m.id">{{ m.name }}</option>
+			</select>
+		</div>
+		<div class="col-md-3">
+			<label>Tipo de cama</label>
+			<input class="form-control mb-1" placeholder="Buscar tipo de cama..." [(ngModel)]="search.bedType" (input)="updateFilteredLists()" />
+			<select class="form-select" [(ngModel)]="filters.bedTypeId" (change)="onFilterChange()">
+				<option [ngValue]="null">Todos</option>
+				<option *ngFor="let b of bedTypesFiltered" [ngValue]="b.id">{{ b.name }}</option>
+			</select>
+		</div>
+		<div class="col-md-3">
+			<label>Servicio</label>
+			<input class="form-control mb-1" placeholder="Buscar servicio..." [(ngModel)]="search.service" (input)="updateFilteredLists()" />
+			<select class="form-select" [(ngModel)]="filters.serviceId" (change)="onFilterChange()">
+				<option [ngValue]="null">Todos</option>
+				<option *ngFor="let s of servicesFiltered" [ngValue]="s.id">{{ s.name }}</option>
+			</select>
+		</div>
+	</div>
+</div>
+
+<div #mapElement class="map-container"></div>
+
+<!-- Popup for sede info -->
+<div id="popup" class="ol-popup" #popup>
+	<a href="#" id="popup-closer" class="ol-popup-closer"></a>
+	<div id="popup-content"></div>
+</div>

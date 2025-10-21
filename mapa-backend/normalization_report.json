@@ -1,0 +1,17 @@
+{
+  "services": [
+    {
+      "canonical": {
+        "id": 3,
+        "name": "ATENCIÓN DEL PARTO"
+      },
+      "duplicates": [
+        {
+          "id": 2,
+          "name": "Atención del Parto"
+        }
+      ]
+    }
+  ],
+  "bedTypes": []
+}

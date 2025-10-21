@@ -1,0 +1,172 @@
+// scripts/assignHealthRegions.js
+// Usage: node scripts/assignHealthRegions.js
+// This script contains a hard-coded mapping of Municipio -> Región de Salud (from user input)
+// For each mapping it will ensure the HealthRegion exists and set Municipality.HealthRegionId
+
+const sequelize = require('../config/database');
+const Municipality = require('../models/Municipality');
+const HealthRegion = require('../models/HealthRegion');
+
+const mappingsRaw = `
+AGUA DE DIOS,SUROCCIDENTE
+ALBÁN,SABANA CENTRO OCCIDENTE
+ANAPOIMA,CENTRO
+ANOLAIMA,CENTRO
+APULO,SUROCCIDENTE
+ARBELÁEZ,SUR
+BELTRÁN,SUROCCIDENTE
+BITUIMA,SABANA CENTRO OCCIDENTE
+BOJACÁ,SABANA CENTRO OCCIDENTE
+CABRERA,SUR
+CACHIPAY,CENTRO
+CAJICÁ,SABANA CENTRO
+CAPARRAPÍ,BAJO MAGDALENA
+CÁQUEZA,SUR ORIENTE
+CARMEN DE CARUPA,NORORIENTE
+CHAGUANÍ,BAJO MAGDALENA
+CHÍA,SABANA CENTRO
+CHIPAQUE,SUR ORIENTE
+CHOACHÍ,SUR ORIENTE
+CHOCONTÁ,CENTRO ORIENTE ALMEIDAS
+COGUA,SABANA CENTRO
+COTA,SABANA CENTRO
+CUCUNUBÁ,NORORIENTE
+EL COLEGIO,CENTRO
+EL PEÑÓN,NORTE
+EL ROSAL,SABANA CENTRO OCCIDENTE
+FACATATIVÁ,SABANA CENTRO OCCIDENTE
+FÓMEQUE,SUR ORIENTE
+FOSCA,SUR ORIENTE
+FUNZA,SABANA CENTRO OCCIDENTE
+FÚQUENE,NORORIENTE
+FUSAGASUGÁ,SUR
+GACHALÁ,CENTRO ORIENTE - GUAVIO
+GACHANCIPÁ,SABANA CENTRO
+GACHETÁ,CENTRO ORIENTE - GUAVIO
+GAMA,CENTRO ORIENTE - GUAVIO
+GIRARDOT,SUROCCIDENTE
+GRANADA,SOACHA
+GUACHETÁ,NORORIENTE
+GUADUAS,BAJO MAGDALENA
+GUASCA,CENTRO ORIENTE - GUAVIO
+GUATAQUÍ,SUROCCIDENTE
+GUATAVITA,CENTRO ORIENTE - GUAVIO
+GUAYABAL DE SÍQUIMA,SABANA CENTRO OCCIDENTE
+GUAYABETAL,SUR ORIENTE
+GUTIÉRREZ,SUR ORIENTE
+JERUSALÉN,SUROCCIDENTE
+JUNÍN,CENTRO ORIENTE - GUAVIO
+LA CALERA,CENTRO ORIENTE - GUAVIO
+LA MESA,CENTRO
+LA PALMA,NORTE
+LA PEÑA,NOROCCIDENTE
+LA VEGA,NOROCCIDENTE
+LENGUAZAQUE,NORORIENTE
+MACHETÁ,CENTRO ORIENTE ALMEIDAS
+MADRID,SABANA CENTRO OCCIDENTE
+MANTA,CENTRO ORIENTE ALMEIDAS
+MEDINA,MEDINA
+MOSQUERA,SABANA CENTRO OCCIDENTE
+NARIÑO,SUROCCIDENTE
+NEMOCÓN,SABANA CENTRO
+NILO,SUROCCIDENTE
+NIMAIMA,NOROCCIDENTE
+NOCAIMA,NOROCCIDENTE
+PACHO,NORTE
+PAIME,NORTE
+PANDI,SUR
+PARATEBUENO,MEDINA
+PASCA,SUR
+PUERTO SALGAR,BAJO MAGDALENA
+PULÍ,SABANA CENTRO OCCIDENTE
+QUEBRADANEGRA,NOROCCIDENTE
+QUETAME,SUR ORIENTE
+QUIPILE,CENTRO
+RICAURTE,SUROCCIDENTE
+SAN ANTONIO DEL TEQUENDAMA,CENTRO
+SAN BERNARDO,SUR
+SAN CAYETANO,NORTE / SABANA CENTRO
+SAN FRANCISCO,NOROCCIDENTE
+SAN JUAN DE RÍO SECO,SABANA CENTRO OCCIDENTE
+SASAIMA,NOROCCIDENTE
+SESQUILÉ,SABANA CENTRO
+SIBATÉ,SOACHA
+SILVANIA,SUR
+SIMIJACA,NORORIENTE
+SOACHA,SOACHA
+SOPÓ,CENTRO ORIENTE - GUAVIO
+SUBACHOQUE,SABANA CENTRO OCCIDENTE
+SUESCA,CENTRO ORIENTE ALMEIDAS
+SUPATÁ,NORTE
+SUSA,NORORIENTE
+SUTATAUSA,NORORIENTE
+TABIO,SABANA CENTRO
+TAUSA,NORORIENTE
+TENA,CENTRO
+TENJO,SABANA CENTRO
+TIBACUY,SUR
+TIBIRITA,CENTRO ORIENTE ALMEIDAS
+TOCAIMA,SUROCCIDENTE
+TOCANCIPÁ,CENTRO ORIENTE - GUAVIO
+TOPAIPÍ,NORTE
+UBALÁ,MEDINA / CENTRO ORIENTE - GUAVIO
+UBATÉ (VILLA DE SAN DIEGO DE),NORORIENTE
+UNE,SUR ORIENTE
+ÚTICA,NOROCCIDENTE
+VENECIA,SUR
+VERGARA,NOROCCIDENTE
+VIANÍ,SABANA CENTRO OCCIDENTE
+VILLAGÓMEZ,NORTE
+VILLAPINZÓN,CENTRO ORIENTE ALMEIDAS
+VILLETA,NOROCCIDENTE
+VIOTÁ,SUROCCIDENTE
+YACOPÍ,NORTE / BAJO MAGDALENA
+ZIPACÓN,SABANA CENTRO OCCIDENTE / CENTRO
+ZIPAQUIRÁ,SABANA CENTRO
+`;
+
+function normalizeName(s) {
+  return (s || '').normalize('NFC').trim().toUpperCase().replace(/\s+/g, ' ');
+}
+
+async function run() {
+  await sequelize.authenticate();
+  console.log('Connected to DB');
+
+  const lines = mappingsRaw.split('\n').map(l => l.trim()).filter(Boolean);
+  let createdRegions = 0;
+  let assigned = 0;
+
+  for (const line of lines) {
+    const parts = line.split(',');
+    if (parts.length < 2) continue;
+    const muniName = normalizeName(parts[0]);
+    const regionName = normalizeName(parts.slice(1).join(',')).replace(/\s+\/\s+/g, ' / ');
+
+    // Ensure region exists (case-insensitive)
+    let region = await HealthRegion.findOne({ where: sequelize.where(sequelize.fn('upper', sequelize.col('name')), regionName) });
+    if (!region) {
+      region = await HealthRegion.create({ name: regionName });
+      createdRegions++;
+    }
+
+    // Find municipality by name (normalize both sides)
+    const municipalities = await Municipality.findAll();
+    const muni = municipalities.find(m => normalizeName(m.name) === muniName);
+    if (!muni) {
+      console.warn('Municipio no encontrado en DB:', parts[0]);
+      continue;
+    }
+
+    await muni.update({ HealthRegionId: region.id });
+    assigned++;
+  }
+
+  console.log(`Regions created: ${createdRegions}, municipalities assigned: ${assigned}`);
+  process.exit(0);
+}
+
+run().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

@@ -1,0 +1,38 @@
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12 col-md-8 offset-md-2">
+      <div class="card p-3">
+        <h2 class="h5">{{ id ? 'Editar Sede' : 'Nueva Sede' }}</h2>
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <mat-form-field appearance="fill" class="w-100 mb-3">
+            <mat-label>Nombre</mat-label>
+            <input matInput formControlName="name" (blur)="trimControl('name')">
+            <mat-error *ngIf="form.get('name')?.hasError('required')">El nombre es obligatorio</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="w-100 mb-3">
+            <mat-label>Dirección</mat-label>
+            <input matInput formControlName="address" (blur)="trimControl('address')">
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="w-100 mb-3">
+            <mat-label>Municipio</mat-label>
+            <mat-select formControlName="MunicipalityId">
+              <mat-option *ngFor="let m of municipalities" [value]="m.id">{{ m.name }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="w-100 mb-3">
+            <mat-label>Código REPS</mat-label>
+            <input matInput formControlName="reps_code" (blur)="trimControl('reps_code')">
+          </mat-form-field>
+
+          <div class="d-flex gap-2">
+            <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || isSaving">{{ isSaving ? 'Guardando...' : 'Guardar' }}</button>
+            <button mat-button type="button" (click)="router.navigate(['/admin/sedes'])">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

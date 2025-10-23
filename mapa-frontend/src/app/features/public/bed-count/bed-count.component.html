@@ -1,0 +1,8 @@
+<div *ngIf="bedCounts.length > 0">
+  <h5>Camas</h5>
+  <ul>
+    <li *ngFor="let bed of bedCounts">
+      Tipo {{ bed.BedTypeId || '-' }}: inicial {{ bed.initial_count || 0 }}, actuales {{ bed.current_count || 0 }}, proyectadas {{ bed.projected_count || 0 }}
+    </li>
+  </ul>
+</div>

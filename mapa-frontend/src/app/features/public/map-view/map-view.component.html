@@ -1,44 +1,54 @@
-<div class="map-controls container mb-2">
-	<div class="row g-2 align-items-end">
-		<div class="col-md-3">
-			<label>Región de salud</label>
-			<input class="form-control mb-1" placeholder="Buscar región..." [(ngModel)]="search.region" (input)="updateFilteredLists()" />
-			<select class="form-select" [(ngModel)]="filters.healthRegionId" (change)="onRegionChange()">
-				<option [ngValue]="null">Todas</option>
-				<option *ngFor="let r of healthRegionsFiltered" [ngValue]="r.id">{{ r.name }}</option>
-			</select>
-		</div>
-		<div class="col-md-3">
-			<label>Municipio</label>
-			<input class="form-control mb-1" placeholder="Buscar municipio..." [(ngModel)]="search.municipality" (input)="updateFilteredLists()" />
-			<select class="form-select" [(ngModel)]="filters.municipalityId" (change)="onMunicipalityChange()">
-				<option [ngValue]="null">Todos</option>
-				<option *ngFor="let m of municipalitiesFiltered" [ngValue]="m.id">{{ m.name }}</option>
-			</select>
-		</div>
-		<div class="col-md-3">
-			<label>Tipo de cama</label>
-			<input class="form-control mb-1" placeholder="Buscar tipo de cama..." [(ngModel)]="search.bedType" (input)="updateFilteredLists()" />
-			<select class="form-select" [(ngModel)]="filters.bedTypeId" (change)="onFilterChange()">
-				<option [ngValue]="null">Todos</option>
-				<option *ngFor="let b of bedTypesFiltered" [ngValue]="b.id">{{ b.name }}</option>
-			</select>
-		</div>
-		<div class="col-md-3">
-			<label>Servicio</label>
-			<input class="form-control mb-1" placeholder="Buscar servicio..." [(ngModel)]="search.service" (input)="updateFilteredLists()" />
-			<select class="form-select" [(ngModel)]="filters.serviceId" (change)="onFilterChange()">
-				<option [ngValue]="null">Todos</option>
-				<option *ngFor="let s of servicesFiltered" [ngValue]="s.id">{{ s.name }}</option>
-			</select>
-		</div>
-	</div>
-</div>
+<div class="map-container">
+  <div #mapElement class="map"></div>
 
-<div #mapElement class="map-container"></div>
+  <div #popup class="ol-popup">
+    <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+    <div id="popup-content">
+      <div *ngIf="selectedSede">
+        <h6>{{ selectedSede.name || 'Sede' }}</h6>
+        <div *ngIf="selectedSede.municipality"><small><strong>Municipio:</strong> {{ selectedSede.municipality.name }}</small></div>
+        <div *ngIf="selectedSede.healthRegion"><small><strong>Región:</strong> {{ selectedSede.healthRegion.name }}</small></div>
+        <app-bed-count [bedCounts]="selectedSede.bedCounts"></app-bed-count>
+        <app-sede-services [services]="selectedSede.services"></app-sede-services>
+      </div>
+    </div>
+  </div>
 
-<!-- Popup for sede info -->
-<div id="popup" class="ol-popup" #popup>
-	<a href="#" id="popup-closer" class="ol-popup-closer"></a>
-	<div id="popup-content"></div>
+  <div class="filters-panel">
+    <h4>Filtros</h4>
+    <form>
+      <div class="form-group">
+        <label for="region">Región</label>
+        <input type="text" id="region" class="form-control" [(ngModel)]="search.region" (input)="updateFilteredLists()">
+        <select class="form-control" [(ngModel)]="filters.healthRegionId" (change)="onRegionChange()">
+          <option [ngValue]="null">Todas</option>
+          <option *ngFor="let region of healthRegionsFiltered" [value]="region.id">{{ region.name }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="municipality">Municipio</label>
+        <input type="text" id="municipality" class="form-control" [(ngModel)]="search.municipality" (input)="updateFilteredLists()">
+        <select class="form-control" [(ngModel)]="filters.municipalityId" (change)="onMunicipalityChange()">
+          <option [ngValue]="null">Todos</option>
+          <option *ngFor="let municipality of municipalitiesFiltered" [value]="municipality.id">{{ municipality.name }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="service">Servicio</label>
+        <input type="text" id="service" class="form-control" [(ngModel)]="search.service" (input)="updateFilteredLists()">
+        <select class="form-control" [(ngModel)]="filters.serviceId" (change)="onFilterChange()">
+          <option [ngValue]="null">Todos</option>
+          <option *ngFor="let service of servicesFiltered" [value]="service.id">{{ service.name }}</option>
+        </select>
+      </div>
+      <div class="form-grop">
+        <label for="bedType">Tipo de Cama</label>
+        <input type="text" id="bedType" class="form-control" [(ngModel)]="search.bedType" (input)="updateFilteredLists()">
+        <select class="form-control" [(ngModel)]="filters.bedTypeId" (change)="onFilterChange()">
+          <option [ngValue]="null">Todos</option>
+          <option *ngFor="let bedType of bedTypesFiltered" [value]="bedType.id">{{ bedType.name }}</option>
+        </select>
+      </div>
+    </form>
+  </div>
 </div>

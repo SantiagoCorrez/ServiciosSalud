@@ -1,0 +1,8 @@
+<div *ngIf="services.length > 0">
+  <h5>Servicios</h5>
+  <ul>
+    <li *ngFor="let service of services">
+      {{ service.name }}
+    </li>
+  </ul>
+</div>

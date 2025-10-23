@@ -11,8 +11,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { RouterModule } from '@angular/router';
-import { BedCountComponent } from 'src/app/features/public/bed-count/bed-count.component';
-import { SedeServicesComponent } from 'src/app/features/public/sede-services/sede-services.component';
 
 
 @NgModule({
@@ -25,12 +23,10 @@ import { SedeServicesComponent } from 'src/app/features/public/sede-services/sed
     MatInputModule,
     MatButtonModule,
     MatCardModule,
-    FormsModule,
+  FormsModule,
     LoginComponent,
     SignupComponent,
-    RouterModule,
-    BedCountComponent,
-    SedeServicesComponent
+    RouterModule
   ]
 })
 export class PublicModule { }

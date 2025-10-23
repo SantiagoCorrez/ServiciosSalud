@@ -15,14 +15,12 @@ import Overlay from 'ol/Overlay';
 import Feature from 'ol/Feature';
 import { toStringHDMS } from 'ol/coordinate';
 import { CommonModule } from '@angular/common';
-import { BedCountComponent } from '../bed-count/bed-count.component';
-import { SedeServicesComponent } from '../sede-services/sede-services.component';
 
 @Component({
   selector: 'app-map-view',
   templateUrl: './map-view.component.html',
   styleUrls: ['./map-view.component.scss'],
-  imports: [FormsModule, ReactiveFormsModule, CommonModule, BedCountComponent, SedeServicesComponent]
+  imports: [FormsModule, ReactiveFormsModule, CommonModule]
 })
 export class MapViewComponent implements OnInit, AfterViewInit {
   @ViewChild('mapElement') mapElement!: ElementRef;
@@ -30,7 +28,6 @@ export class MapViewComponent implements OnInit, AfterViewInit {
   map!: Map;
   sedeLayer!: VectorLayer<VectorSource>;
   popupOverlay!: Overlay;
-  selectedSede: any = null;
 
   // Filter data
   healthRegions: any[] = [];
@@ -119,7 +116,6 @@ export class MapViewComponent implements OnInit, AfterViewInit {
         closer.addEventListener('click', (e: Event) => {
           e.preventDefault();
           this.popupOverlay.setPosition(undefined);
-          this.selectedSede = null;
         });
       }
     }, 0);
@@ -130,19 +126,33 @@ export class MapViewComponent implements OnInit, AfterViewInit {
       this.map.forEachFeatureAtPixel(evt.pixel, (feat: any) => { found = feat; return true; });
       if (found) {
         const props: any = found.getProperties ? found.getProperties() : (found.properties || {});
-        this.selectedSede = props;
         // Build HTML content for bedCounts and services
         const contentEl = this.popupElement.nativeElement.querySelector('#popup-content');
         let html = `<h6>${props.name || 'Sede'}</h6>`;
         if (props.municipality) html += `<div><small><strong>Municipio:</strong> ${props.municipality.name}</small></div>`;
         if (props.healthRegion) html += `<div><small><strong>Región:</strong> ${props.healthRegion.name}</small></div>`;
 
+        if (props.bedCounts && props.bedCounts.length) {
+          html += '<div><strong>Camas</strong><ul>';
+          for (const b of props.bedCounts) {
+            html += `<li>Tipo ${b.BedTypeId || '-'}: inicial ${b.initial_count || 0}, actuales ${b.current_count || 0}, proyectadas ${b.projected_count || 0}</li>`;
+          }
+          html += '</ul></div>';
+        }
+
+        if (props.services && props.services.length) {
+          html += '<div><strong>Servicios</strong><ul>';
+          for (const s of props.services) {
+            html += `<li>${s.name}</li>`;
+          }
+          html += '</ul></div>';
+        }
+
         if (contentEl) contentEl.innerHTML = html;
         this.popupOverlay.setPosition(evt.coordinate);
       } else {
         // click on empty space -> close popup
         this.popupOverlay.setPosition(undefined);
-        this.selectedSede = null;
       }
     });
   }

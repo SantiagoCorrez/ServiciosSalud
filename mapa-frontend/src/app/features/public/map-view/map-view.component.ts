@@ -11,23 +11,21 @@ import { fromLonLat } from 'ol/proj';
 import { MapDataService } from '../../../core/services/map-data.service';
 import { Style, Circle as CircleStyle, Fill, Stroke } from 'ol/style';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import Overlay from 'ol/Overlay';
 import Feature from 'ol/Feature';
-import { toStringHDMS } from 'ol/coordinate';
 import { CommonModule } from '@angular/common';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { SedeInfoComponent } from '../sede-info/sede-info.component';
 
 @Component({
   selector: 'app-map-view',
   templateUrl: './map-view.component.html',
   styleUrls: ['./map-view.component.scss'],
-  imports: [FormsModule, ReactiveFormsModule, CommonModule]
+  imports: [FormsModule, ReactiveFormsModule, CommonModule, MatDialogModule]
 })
 export class MapViewComponent implements OnInit, AfterViewInit {
   @ViewChild('mapElement') mapElement!: ElementRef;
-  @ViewChild('popup', { read: ElementRef }) popupElement!: ElementRef;
   map!: Map;
   sedeLayer!: VectorLayer<VectorSource>;
-  popupOverlay!: Overlay;
 
   // Filter data
   healthRegions: any[] = [];
@@ -54,7 +52,7 @@ export class MapViewComponent implements OnInit, AfterViewInit {
     serviceId: null
   };
 
-  constructor(private mapDataService: MapDataService) { }
+  constructor(private mapDataService: MapDataService, public dialog: MatDialog) { }
 
   ngOnInit(): void { }
 
@@ -65,14 +63,21 @@ export class MapViewComponent implements OnInit, AfterViewInit {
   }
 
   private initMap(): void {
-    
+
     const layerDepartamento = new VectorLayer({
       source: new VectorSource({
         url: '/capas/Municipios_DANE.geojson',
         format: new GeoJSON()
       }),
-      visible: true, // inicialmente oculta
-    });
+      visible: true, // inicialmente oculta,
+      style: new Style({
+        stroke: new Stroke({
+          color: '#3388ff',
+          width: 3
+        })
+
+      })
+    })
     this.sedeLayer = new VectorLayer({
       source: new VectorSource({
         features: []
@@ -101,58 +106,19 @@ export class MapViewComponent implements OnInit, AfterViewInit {
       })
     });
 
-    // Create popup overlay
-    this.popupOverlay = new Overlay({
-      element: this.popupElement?.nativeElement,
-      autoPan: true
-    });
-    this.map.addOverlay(this.popupOverlay);
-
-    // Close behavior for the closer link (delegated in DOM after ViewChild available)
-    // We'll set the closer listener after a short timeout to ensure element exists
-    setTimeout(() => {
-      const closer = this.popupElement?.nativeElement.querySelector('#popup-closer');
-      if (closer) {
-        closer.addEventListener('click', (e: Event) => {
-          e.preventDefault();
-          this.popupOverlay.setPosition(undefined);
-        });
-      }
-    }, 0);
-
     // Handle map clicks to show info for sede features
     this.map.on('singleclick', evt => {
-      let found: any = null;
-      this.map.forEachFeatureAtPixel(evt.pixel, (feat: any) => { found = feat; return true; });
-      if (found) {
-        const props: any = found.getProperties ? found.getProperties() : (found.properties || {});
-        // Build HTML content for bedCounts and services
-        const contentEl = this.popupElement.nativeElement.querySelector('#popup-content');
-        let html = `<h6>${props.name || 'Sede'}</h6>`;
-        if (props.municipality) html += `<div><small><strong>Municipio:</strong> ${props.municipality.name}</small></div>`;
-        if (props.healthRegion) html += `<div><small><strong>Región:</strong> ${props.healthRegion.name}</small></div>`;
+      const featuresAtPixel = this.map.getFeaturesAtPixel(evt.pixel);
 
-        if (props.bedCounts && props.bedCounts.length) {
-          html += '<div><strong>Camas</strong><ul>';
-          for (const b of props.bedCounts) {
-            html += `<li>Tipo ${b.BedTypeId || '-'}: inicial ${b.initial_count || 0}, actuales ${b.current_count || 0}, proyectadas ${b.projected_count || 0}</li>`;
+      if (featuresAtPixel && featuresAtPixel.length > 0) {
+        const firstFeature = featuresAtPixel[0] as Feature;
+        const props = firstFeature.getProperties();
+
+        this.dialog.open(SedeInfoComponent, {
+          data: {
+            props
           }
-          html += '</ul></div>';
-        }
-
-        if (props.services && props.services.length) {
-          html += '<div><strong>Servicios</strong><ul>';
-          for (const s of props.services) {
-            html += `<li>${s.name}</li>`;
-          }
-          html += '</ul></div>';
-        }
-
-        if (contentEl) contentEl.innerHTML = html;
-        this.popupOverlay.setPosition(evt.coordinate);
-      } else {
-        // click on empty space -> close popup
-        this.popupOverlay.setPosition(undefined);
+        });
       }
     });
   }
@@ -195,8 +161,8 @@ export class MapViewComponent implements OnInit, AfterViewInit {
       try {
         const details: any = await this.mapDataService.getMunicipalityDetails(this.filters.municipalityId).toPromise();
         // details.sedes is an array; aggregate available services and bedTypes
-  const svcMap = new globalThis.Map<number, any>();
-  const bedTypeMap = new globalThis.Map<number, any>();
+        const svcMap = new globalThis.Map<number, any>();
+        const bedTypeMap = new globalThis.Map<number, any>();
         for (const s of details.sedes || []) {
           for (const svc of s.services || []) svcMap.set(svc.id, svc);
           for (const b of s.bedCounts || []) bedTypeMap.set(b.BedTypeId, b.BedTypeId);
@@ -241,10 +207,43 @@ export class MapViewComponent implements OnInit, AfterViewInit {
   private loadSedes(): void {
     this.mapDataService.getSedesGeoJSON(this.filters).subscribe((geojson: any) => {
       const format = new GeoJSON();
-      const features = format.readFeatures(geojson, { featureProjection: this.map.getView().getProjection() });
+      const finalFeatures: Feature[] = [];
+
+      if (geojson && geojson.features) {
+        const sedeFeatures = format.readFeatures(geojson, { featureProjection: this.map.getView().getProjection() });
+
+        sedeFeatures.forEach(sedeFeature => {
+          const properties = sedeFeature.getProperties();
+          const services = properties['services'] || [];
+          const sedeGeometry = sedeFeature.getGeometry();
+
+          if (sedeGeometry) {
+            if (services.length > 0) {
+              services.forEach((service: any) => {
+                const serviceProps = { ...properties };
+
+                const serviceFeature = new Feature({
+                  ...serviceProps,
+                  geometry: sedeGeometry
+                });
+                finalFeatures.push(serviceFeature);
+              });
+            } else {
+              // If a sede has no services, still show it as a single point.
+              finalFeatures.push(sedeFeature);
+            }
+          }
+        });
+      }
+
       const source = this.sedeLayer.getSource() as VectorSource;
       source.clear(true);
-      source.addFeatures(features);
+      source.addFeatures(finalFeatures);
+
+      if (finalFeatures.length > 0) {
+        const extent = source.getExtent();
+        this.map.getView().fit(extent, { padding: [100, 100, 100, 100], duration: 1000, maxZoom: 15 });
+      }
     }, err => {
       console.error('Error cargando sedes', err);
     });

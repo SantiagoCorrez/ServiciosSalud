@@ -7,9 +7,15 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const path = require('path');
+
 // Middlewares
 app.use(cors()); // Habilita CORS para permitir peticiones desde Angular
 app.use(express.json()); // Permite al servidor entender JSON
+
+// Servir archivos estáticos de Angular
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Importar modelos para que Sequelize los conozca
 require('./models/User');
 require('./models/HealthRegion');
@@ -28,9 +34,11 @@ app.use('/api/health-regions', require('./routes/healthRegionRoutes'));
 app.use('/api/municipalities', require('./routes/municipalityRoutes'));
 app.use('/api/sedes', require('./routes/sedeRoutes'));
 app.use('/api/public', require('./routes/publicRoutes')); // Rutas públicas, sin protección
-// Ruta de prueba
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back index.html
 app.get('/', (req, res) => {
-    res.send('¡API del Mapa funcionando!');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 

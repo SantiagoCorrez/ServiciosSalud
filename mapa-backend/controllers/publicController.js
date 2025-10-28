@@ -131,10 +131,9 @@ exports.getSedesGeoJSON = async (req, res) => {
                 model: Municipality,
                 include: [{ model: HealthRegion, attributes: ['id', 'name'] }]
             },
-            // include bed counts and their BedType if requested
             {
                 model: BedCount,
-                include: []
+                include: [{ model: BedType, attributes: ['id', 'name'] }]
             },
             {
                 model: Service,
@@ -197,14 +196,14 @@ exports.getSedesGeoJSON = async (req, res) => {
         // Map to GeoJSON Features
         const features = filtered.map(s => ({
             type: 'Feature',
-            geometry: s.geometry || null,
+            geometry: s.geometry || (s.Municipality ? s.Municipality.geometry : null),
             properties: {
                 id: s.id,
                 name: s.name,
                 municipality: s.Municipality ? { id: s.Municipality.id, name: s.Municipality.name } : null,
                 healthRegion: s.Municipality && s.Municipality.HealthRegion ? { id: s.Municipality.HealthRegion.id, name: s.Municipality.HealthRegion.name } : null,
-                bedCounts: (s.BedCounts || []).map(b => ({ id: b.id, BedTypeId: b.BedTypeId, initial_count: b.initial_count, current_count: b.current_count, projected_count: b.projected_count })),
-                services: (s.Services || []).map(svc => ({ id: svc.id, name: svc.name }))
+                bedCounts: (s.BedCounts || []).map(b => ({ id: b.id, BedTypeId: b.BedTypeId, initial_count: b.initial_count, current_count: b.current_count, projected_count: b.projected_count, BedType: b.BedType })),
+                services: (s.Services || []).map(svc => ({ id: svc.id, name: svc.name, SedeService: svc.SedeService }))
             }
         }));
 

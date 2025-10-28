@@ -11,6 +11,7 @@ import { ServicesFormComponent } from './services/services-form/services-form.co
 import { MunicipalitiesFormComponent } from './municipalities/municipalities-form/municipalities-form.component';
 import { SedesFormComponent } from './sedes/sedes-form/sedes-form.component';
 import { HealthRegionsFormComponent } from './health-regions/health-regions-form/health-regions-form.component';
+import { SedeDataComponent } from './sede-data/sede-data.component';
 
 const routes: Routes = [
   // Redirige la ruta /admin a /admin/bed-types por defecto
@@ -30,6 +31,7 @@ const routes: Routes = [
   { path: 'health-regions', component: HealthRegionsListComponent },
   { path: 'health-regions/new', component: HealthRegionsFormComponent },
   { path: 'health-regions/:id/edit', component: HealthRegionsFormComponent },
+  { path: 'sede-service', component: SedeDataComponent },
 ];
 
 @NgModule({

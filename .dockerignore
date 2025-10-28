@@ -1,0 +1,7 @@
+.git
+.gitignore
+node_modules
+
+# Don't include the Dockerfile itself
+Dockerfile
+*.md

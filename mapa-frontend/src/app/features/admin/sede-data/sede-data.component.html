@@ -1,0 +1,186 @@
+<mat-card>
+  <mat-card-title>Administrar Datos de Sedes</mat-card-title>
+  <mat-card-content>
+    <div class="filters">
+      <mat-form-field>
+        <mat-label>Región</mat-label>
+        <mat-select [(ngModel)]="selectedRegionId" (selectionChange)="onRegionChange()">
+          <mat-option [value]="null">Todas</mat-option>
+          <mat-option *ngFor="let region of healthRegions" [value]="region.id">{{ region.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Municipio</mat-label>
+        <mat-select [(ngModel)]="selectedMunicipalityId" (selectionChange)="onMunicipalityChange()">
+          <mat-option [value]="null">Todos</mat-option>
+          <mat-option *ngFor="let mun of filteredMunicipalities" [value]="mun.id">{{ mun.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Sede</mat-label>
+        <mat-select [(ngModel)]="selectedSedeId" (selectionChange)="onSedeChange()">
+          <mat-option [value]="null">Seleccione una sede</mat-option>
+          <mat-option *ngFor="let sede of filteredSedes" [value]="sede.id">{{ sede.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div *ngIf="sedeData">
+      <h3>Servicios</h3>
+      <table mat-table [dataSource]="sedeData.Services" class="mat-elevation-z8">
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef> Servicio </th>
+          <td mat-cell *matCellDef="let element"> {{element.name}} </td>
+        </ng-container>
+
+        <!-- Initial Column -->
+        <ng-container matColumnDef="initial_status">
+          <th mat-header-cell *matHeaderCellDef> Inicial </th>
+          <td mat-cell *matCellDef="let element">
+            <mat-form-field>
+              <input matInput type="number" [(ngModel)]="element.SedeService.initial_status">
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <!-- Current Column -->
+        <ng-container matColumnDef="current_status">
+          <th mat-header-cell *matHeaderCellDef> Actual </th>
+          <td mat-cell *matCellDef="let element">
+            <mat-form-field>
+              <input matInput type="number" [(ngModel)]="element.SedeService.current_status">
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <!-- Projected Column -->
+        <ng-container matColumnDef="projected_status">
+          <th mat-header-cell *matHeaderCellDef> Proyectado </th>
+          <td mat-cell *matCellDef="let element">
+            <mat-form-field>
+              <input matInput type="number" [(ngModel)]="element.SedeService.projected_status">
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef> Acciones </th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-icon-button color="warn" (click)="deleteService(element)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="serviceDisplayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: serviceDisplayedColumns;"></tr>
+      </table>
+
+      <div class="add-form mt-4">
+        <h4>Añadir Servicio</h4>
+        <mat-form-field>
+          <mat-label>Servicio</mat-label>
+          <mat-select [(ngModel)]="newService.ServiceId">
+            <mat-option *ngFor="let service of allServices" [value]="service.id">{{ service.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Inicial</mat-label>
+          <input matInput type="number" [(ngModel)]="newService.initial_status">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Actual</mat-label>
+          <input matInput type="number" [(ngModel)]="newService.current_status">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Proyectado</mat-label>
+          <input matInput type="number" [(ngModel)]="newService.projected_status">
+        </mat-form-field>
+        <button mat-raised-button (click)="addService()">Añadir Servicio</button>
+      </div>
+
+      <h3 class="mt-4">Camas</h3>
+      <table mat-table [dataSource]="sedeData.BedCounts" class="mat-elevation-z8">
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef> Tipo de Cama </th>
+          <td mat-cell *matCellDef="let element"> {{element.BedType.name}} </td>
+        </ng-container>
+
+        <!-- Initial Column -->
+        <ng-container matColumnDef="initial_count">
+          <th mat-header-cell *matHeaderCellDef> Inicial </th>
+          <td mat-cell *matCellDef="let element">
+            <mat-form-field>
+              <input matInput type="number" [(ngModel)]="element.initial_count">
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <!-- Current Column -->
+        <ng-container matColumnDef="current_count">
+          <th mat-header-cell *matHeaderCellDef> Actual </th>
+          <td mat-cell *matCellDef="let element">
+            <mat-form-field>
+              <input matInput type="number" [(ngModel)]="element.current_count">
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <!-- Projected Column -->
+        <ng-container matColumnDef="projected_count">
+          <th mat-header-cell *matHeaderCellDef> Proyectado </th>
+          <td mat-cell *matCellDef="let element">
+            <mat-form-field>
+              <input matInput type="number" [(ngModel)]="element.projected_count">
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef> Acciones </th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-icon-button color="warn" (click)="deleteBed(element)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="bedDisplayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: bedDisplayedColumns;"></tr>
+      </table>
+
+      <div class="add-form mt-4">
+        <h4>Añadir Tipo de Cama</h4>
+        <mat-form-field>
+          <mat-label>Tipo de Cama</mat-label>
+          <mat-select [(ngModel)]="newBed.BedTypeId">
+            <mat-option *ngFor="let bedType of allBedTypes" [value]="bedType.id">{{ bedType.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Inicial</mat-label>
+          <input matInput type="number" [(ngModel)]="newBed.initial_count">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Actual</mat-label>
+          <input matInput type="number" [(ngModel)]="newBed.current_count">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Proyectado</mat-label>
+          <input matInput type="number" [(ngModel)]="newBed.projected_count">
+        </mat-form-field>
+        <button mat-raised-button (click)="addBed()">Añadir Tipo de Cama</button>
+      </div>
+
+      <div class="actions mt-4">
+        <button mat-raised-button color="primary" (click)="save()">Guardar Cambios</button>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>

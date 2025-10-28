@@ -13,6 +13,11 @@ const Municipality = sequelize.define('Municipality', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  geometry: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    comment: 'GeoJSON Point geometry for the municipality centroid'
+  }
   // (geometry removed) boundaries/geojson are kept externally in the frontend capes
 });
 

@@ -8,9 +8,11 @@ const fs = require('fs');
 const path = require('path');
 const sequelize = require('../config/database');
 const Municipality = require('../models/Municipality');
+const { default: centroid } = require('@turf/centroid');
 
 async function run() {
   await sequelize.authenticate();
+  await sequelize.sync({ alter: true });
   console.log('Connected to DB');
 
   const geojsonPath = path.resolve(__dirname, '..', '..', 'mapa-frontend', 'public', 'capas', 'Municipios_DANE.geojson');
@@ -29,7 +31,7 @@ async function run() {
     const props = feat.properties || {};
     const codeRaw = props.muncodigo;
     const name = props.munnombre || props.nombre || null;
-    const geometry = feat.geometry || null;
+    const featureGeometry = feat.geometry || null;
 
     // muncodigo is expected to be numeric string; parse to integer
     const id = parseInt(codeRaw, 10);
@@ -38,12 +40,19 @@ async function run() {
       continue;
     }
 
+    let pointGeometry = null;
+    if (featureGeometry) {
+      // Calculate centroid
+      const center = centroid(feat);
+      pointGeometry = center.geometry;
+    }
+
     try {
       // Use raw SQL upsert to avoid model-mapping issues
       const tableName = Municipality.getTableName();
       const tbl = typeof tableName === 'string' ? tableName : tableName.tableName || tableName.name;
-  const insertQ = `INSERT INTO "${tbl}" (id, name, "createdAt", "updatedAt") VALUES (:id, :name, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, "updatedAt" = NOW()`;
-  await sequelize.query(insertQ, { replacements: { id, name } });
+      const insertQ = `INSERT INTO "${tbl}" (id, name, geometry, "createdAt", "updatedAt") VALUES (:id, :name, :geometry, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, geometry = EXCLUDED.geometry, "updatedAt" = NOW()`;
+      await sequelize.query(insertQ, { replacements: { id, name, geometry: pointGeometry ? JSON.stringify(pointGeometry) : null } });
       processed++;
     } catch (err) {
       console.error('Error inserting/updating municipality', id, err.message || err);

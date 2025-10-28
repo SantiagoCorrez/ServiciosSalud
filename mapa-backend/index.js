@@ -37,7 +37,7 @@ app.use('/api/public', require('./routes/publicRoutes')); // Rutas públicas, si
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back index.html
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

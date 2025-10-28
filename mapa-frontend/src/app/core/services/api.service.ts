@@ -6,7 +6,7 @@ import { HttpClient } from '@angular/common/http';
   providedIn: 'root'
 })
 export class ApiService {
-  private readonly baseUrl = 'http://localhost:3000/api'; // La URL de tu backend
+  private readonly baseUrl = '/api'; // La URL de tu backend
 
   constructor(private http: HttpClient) { }
 

@@ -20,9 +20,9 @@ services:
       - PORT=3000
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_NAME=servicios
+      - DB_NAME=servicios_salud
       - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_PASSWORD=Asdf123.
     volumes:
       - ./mapa-backend:/usr/src/app:cached
     depends_on:
@@ -33,9 +33,9 @@ services:
   db:
     image: postgres:15
     environment:
-      - POSTGRES_DB=servicios
+      - POSTGRES_DB=servicios_salud
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=Asdf123.
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:

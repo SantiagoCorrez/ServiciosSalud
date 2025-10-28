@@ -24,7 +24,9 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=Asdf123.
     volumes:
+      # Mount the source for development but keep node_modules from the image
       - ./mapa-backend:/usr/src/app:cached
+      - backend_node_modules:/usr/src/app/node_modules
     depends_on:
       db:
         condition: service_healthy
@@ -49,3 +51,4 @@ services:
 
 volumes:
   db_data:
+  backend_node_modules:

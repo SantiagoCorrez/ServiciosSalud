@@ -25,7 +25,7 @@ export class SedeInfoComponent implements AfterViewInit {
   servicesDataSource = new MatTableDataSource<any>();
   bedsDataSource = new MatTableDataSource<any>();
 
-  servicesDisplayedColumns: string[] = ['name', 'initial_status', 'current_status', 'projected_status'];
+  servicesDisplayedColumns: string[] = ['name', 'initial_status', 'projected_status'];
   bedsDisplayedColumns: string[] = ['name', 'initial_count', 'current_count', 'projected_count'];
 
   @ViewChild('servicesPaginator') servicesPaginator!: MatPaginator;

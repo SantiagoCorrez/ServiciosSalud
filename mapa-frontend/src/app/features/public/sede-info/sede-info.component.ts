@@ -22,8 +22,8 @@ import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
   ],
 })
 export class SedeInfoComponent implements AfterViewInit {
-  servicesDataSource = new MatTableDataSource<any>();
-  bedsDataSource = new MatTableDataSource<any>();
+  servicesDataSource:MatTableDataSource<any>[] = [];
+  bedsDataSource:MatTableDataSource<any>[] = [];
 
   servicesDisplayedColumns: string[] = ['name', 'initial_status', 'projected_status'];
   bedsDisplayedColumns: string[] = ['name', 'initial_count', 'current_count', 'projected_count'];
@@ -34,17 +34,24 @@ export class SedeInfoComponent implements AfterViewInit {
   constructor(
     public dialogRef: MatDialogRef<SedeInfoComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any
-  ) {}
+  ) { }
 
   ngAfterViewInit(): void {
-    if (this.data.props.services) {
-      this.servicesDataSource.data = this.data.props.services;
-      this.servicesDataSource.paginator = this.servicesPaginator;
-    }
-    if (this.data.props.bedCounts) {
-      this.bedsDataSource.data = this.data.props.bedCounts;
-      this.bedsDataSource.paginator = this.bedsPaginator;
-    }
+    console.log('Sede Info Prop:', this.data);
+    this.data.props.forEach((prop: any, index: number) => {
+      console.log('Sede Info Prop:', prop);
+      if (prop.services) {
+        this.servicesDataSource[index] = new MatTableDataSource<any>();
+        this.servicesDataSource[index].data = prop.services;
+        this.servicesDataSource[index].paginator = this.servicesPaginator;
+      }
+      if (prop.bedCounts) {
+        this.bedsDataSource[index] = new MatTableDataSource<any>();
+        this.bedsDataSource[index].data = prop.bedCounts;
+        this.bedsDataSource[index].paginator = this.bedsPaginator;
+      }
+    });
+
   }
 
   close(): void {

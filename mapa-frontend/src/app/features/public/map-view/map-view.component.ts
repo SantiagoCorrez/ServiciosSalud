@@ -1,6 +1,6 @@
 // src/app/features/public/map-view/map-view.component.ts
 import { Component, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
-import Map from 'ol/Map';
+import OLMap from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
@@ -12,6 +12,7 @@ import { MapDataService } from '../../../core/services/map-data.service';
 import { Style, Circle as CircleStyle, Fill, Stroke } from 'ol/style';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import Feature from 'ol/Feature';
+import { Point } from 'ol/geom';
 import { CommonModule } from '@angular/common';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SedeInfoComponent } from '../sede-info/sede-info.component';
@@ -24,7 +25,7 @@ import { SedeInfoComponent } from '../sede-info/sede-info.component';
 })
 export class MapViewComponent implements OnInit, AfterViewInit {
   @ViewChild('mapElement') mapElement!: ElementRef;
-  map!: Map;
+  map!: OLMap;
   sedeLayer!: VectorLayer<VectorSource>;
 
   // Filter data
@@ -90,7 +91,7 @@ export class MapViewComponent implements OnInit, AfterViewInit {
         })
       })
     });
-    this.map = new Map({
+    this.map = new OLMap({
       target: this.mapElement.nativeElement,
       layers: [
         new TileLayer({
@@ -111,12 +112,16 @@ export class MapViewComponent implements OnInit, AfterViewInit {
       const featuresAtPixel = this.map.getFeaturesAtPixel(evt.pixel);
 
       if (featuresAtPixel && featuresAtPixel.length > 0) {
-        const firstFeature = featuresAtPixel[0] as Feature;
-        const props = firstFeature.getProperties();
+        // Iterate through all features found at the clicked pixel
+        console.log('Features at pixel:', featuresAtPixel);
+        const allProps: any[] = [];
+        featuresAtPixel.forEach(feature => {
+          allProps.push(feature.getProperties());
+        });
 
         this.dialog.open(SedeInfoComponent, {
           data: {
-            props
+            props: allProps // Pass an array of properties
           }
         });
       }
@@ -207,40 +212,43 @@ export class MapViewComponent implements OnInit, AfterViewInit {
   private loadSedes(): void {
     this.mapDataService.getSedesGeoJSON(this.filters).subscribe((geojson: any) => {
       const format = new GeoJSON();
-      const finalFeatures: Feature[] = [];
-
+      let finalFeatures: Feature[] = [];
+  
       if (geojson && geojson.features) {
-        const sedeFeatures = format.readFeatures(geojson, { featureProjection: this.map.getView().getProjection() });
-
+        const sedeFeatures = format.readFeatures(geojson, {
+          featureProjection: this.map.getView().getProjection()
+        });
+  
         sedeFeatures.forEach(sedeFeature => {
           const properties = sedeFeature.getProperties();
           const services = properties['services'] || [];
           const sedeGeometry = sedeFeature.getGeometry();
-
+  
           if (sedeGeometry) {
-            if (services.length > 0) {
-              services.forEach((service: any) => {
+            if (services.length > 0) { 
+                // Create a new feature for each service
                 const serviceProps = { ...properties };
-
-                const serviceFeature = new Feature({
-                  ...serviceProps,
-                  geometry: sedeGeometry
-                });
+                const serviceFeature = new Feature(serviceProps);
+                serviceFeature.setGeometry(sedeGeometry.clone()); // CLONE THE GEOMETRY HERE
                 finalFeatures.push(serviceFeature);
-              });
             } else {
               // If a sede has no services, still show it as a single point.
-              finalFeatures.push(sedeFeature);
+              // Also clone the geometry here to ensure independence if this feature is later spiderfied
+              const clonedSedeFeature = sedeFeature.clone();
+              clonedSedeFeature.setGeometry(sedeGeometry.clone());
+              finalFeatures.push(clonedSedeFeature);
             }
           }
         });
       }
-
+  
+      const processedFeatures = finalFeatures;
+  
       const source = this.sedeLayer.getSource() as VectorSource;
       source.clear(true);
-      source.addFeatures(finalFeatures);
-
-      if (finalFeatures.length > 0) {
+      source.addFeatures(processedFeatures);
+  
+      if (processedFeatures.length > 0) {
         const extent = source.getExtent();
         this.map.getView().fit(extent, { padding: [100, 100, 100, 100], duration: 1000, maxZoom: 15 });
       }

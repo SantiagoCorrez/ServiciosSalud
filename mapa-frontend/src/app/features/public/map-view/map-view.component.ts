@@ -16,6 +16,29 @@ import { Point } from 'ol/geom';
 import { CommonModule } from '@angular/common';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SedeInfoComponent } from '../sede-info/sede-info.component';
+import Overlay from 'ol/Overlay';
+
+const REGION_COLORS: { [key: number]: string } = {
+  1: 'rgba(255, 99, 132, 0.6)',   // Red
+  2: 'rgba(54, 162, 235, 0.6)',   // Blue
+  3: 'rgba(255, 206, 86, 0.6)',   // Yellow
+  4: 'rgba(75, 192, 192, 0.6)',   // Teal
+  5: 'rgba(153, 102, 255, 0.6)',  // Purple
+  6: 'rgba(255, 159, 64, 0.6)',   // Orange
+  7: 'rgba(199, 199, 199, 0.6)',  // Grey
+  8: 'rgba(83, 102, 255, 0.6)',   // Indigo
+  9: 'rgba(40, 159, 64, 0.6)',    // Green
+  10: 'rgba(218, 25, 83, 0.6)',   // Orange
+  11: 'rgba(153, 118, 118, 0.6)',  // Grey
+  12: 'rgba(83, 102, 255, 0.6)',   // Indigo
+  13: 'rgba(126, 179, 137, 0.6)',    // Green
+  14: 'rgba(210, 99, 132, 0.6)',   // Pink
+  15: 'rgba(83, 57, 57, 0.6)',  // Grey
+  16: 'rgba(77, 85, 149, 0.6)',   // Indigo
+  17: 'rgba(36, 67, 42, 0.6)',    // Green
+  18: 'rgba(143, 101, 114, 0.6)',   // Pink
+  // Add more if needed or use a generator
+};
 
 @Component({
   selector: 'app-map-view',
@@ -25,8 +48,15 @@ import { SedeInfoComponent } from '../sede-info/sede-info.component';
 })
 export class MapViewComponent implements OnInit, AfterViewInit {
   @ViewChild('mapElement') mapElement!: ElementRef;
+  @ViewChild('tooltip') tooltipElement!: ElementRef;
+
   map!: OLMap;
+  // sedeLayer is no longer used for points, but we might keep it empty or remove it. 
+  // Keeping it as a placeholder if needed, but logic will change.
   sedeLayer!: VectorLayer<VectorSource>;
+
+  tooltipOverlay!: Overlay;
+  layerDepartamento!: VectorLayer<VectorSource>;
 
   // Filter data
   healthRegions: any[] = [];
@@ -53,10 +83,19 @@ export class MapViewComponent implements OnInit, AfterViewInit {
     serviceId: null
   };
 
+  // Aggregated data map: Municipality ID -> { totalServices, totalBeds, sedes: [] }
+  municipalityData = new Map<number, { totalServices: number, totalBeds: number, sedes: any[] }>();
+
+  // Map Municipality ID -> Health Region ID
+  municipalityRegionMap = new Map<number, number>();
+  showFilters: boolean = false;
+
   constructor(private mapDataService: MapDataService, public dialog: MatDialog) { }
 
   ngOnInit(): void { }
-
+  toggleFilters(): void {
+    this.showFilters = !this.showFilters;
+  }
   ngAfterViewInit(): void {
     this.initMap();
     this.loadReferenceLists();
@@ -64,41 +103,59 @@ export class MapViewComponent implements OnInit, AfterViewInit {
   }
 
   private initMap(): void {
+    // Create tooltip overlay
+    this.tooltipOverlay = new Overlay({
+      element: this.tooltipElement.nativeElement,
+      offset: [10, 0],
+      positioning: 'bottom-left'
+    });
 
-    const layerDepartamento = new VectorLayer({
+    this.layerDepartamento = new VectorLayer({
       source: new VectorSource({
         url: '/capas/Municipios_DANE.geojson',
         format: new GeoJSON()
       }),
-      visible: true, // inicialmente oculta,
-      style: new Style({
-        stroke: new Stroke({
-          color: '#3388ff',
-          width: 3
-        })
+      visible: true,
+      style: (feature) => {
+        const props = feature.getProperties();
+        const munId = parseInt(props['muncodigo'], 10);
+        const regionId = this.municipalityRegionMap.get(munId);
 
-      })
-    })
+        let fillColor = 'rgba(255, 255, 255, 0.1)'; // Default transparent
+        if (regionId && REGION_COLORS[regionId]) {
+          fillColor = REGION_COLORS[regionId];
+        }
+
+        return new Style({
+          stroke: new Stroke({
+            color: '#3388ff',
+            width: 2
+          }),
+          fill: new Fill({
+            color: fillColor
+          })
+        });
+      }
+    });
+
     this.sedeLayer = new VectorLayer({
       source: new VectorSource({
         features: []
       }),
-      style: new Style({
-        image: new CircleStyle({
-          radius: 6,
-          fill: new Fill({ color: '#d9534f' }),
-          stroke: new Stroke({ color: '#fff', width: 1 })
-        })
-      })
+      // Style is irrelevant as we won't add features, but keeping it valid
+      style: new Style({})
     });
+
     this.map = new OLMap({
       target: this.mapElement.nativeElement,
       layers: [
         new TileLayer({
           source: new OSM()
-        }), layerDepartamento
-        , this.sedeLayer
+        }),
+        this.layerDepartamento,
+        this.sedeLayer
       ],
+      overlays: [this.tooltipOverlay],
       view: new View({
         center: fromLonLat([-74, 5]),
         zoom: 9,
@@ -107,23 +164,62 @@ export class MapViewComponent implements OnInit, AfterViewInit {
       })
     });
 
-    // Handle map clicks to show info for sede features
-    this.map.on('singleclick', evt => {
-      const featuresAtPixel = this.map.getFeaturesAtPixel(evt.pixel);
+    // Pointer move for tooltip
+    this.map.on('pointermove', (evt) => {
+      if (evt.dragging) {
+        this.tooltipOverlay.setPosition(undefined);
+        return;
+      }
 
-      if (featuresAtPixel && featuresAtPixel.length > 0) {
-        // Iterate through all features found at the clicked pixel
-        console.log('Features at pixel:', featuresAtPixel);
-        const allProps: any[] = [];
-        featuresAtPixel.forEach(feature => {
-          allProps.push(feature.getProperties());
-        });
+      const pixel = this.map.getEventPixel(evt.originalEvent);
+      const feature = this.map.forEachFeatureAtPixel(pixel, (feature) => feature);
 
-        this.dialog.open(SedeInfoComponent, {
-          data: {
-            props: allProps // Pass an array of properties
+      if (feature) {
+        const props = feature.getProperties();
+        // Check if it's a municipality feature (has muncodigo)
+        if (props['muncodigo']) {
+          const munId = parseInt(props['muncodigo'], 10);
+          const data = this.municipalityData.get(munId);
+
+          const munName = props['munnombre'] || 'Municipio';
+          let tooltipContent = `<strong>${munName}</strong><br/>`;
+
+          if (data) {
+            tooltipContent += `Servicios: ${data.totalServices}<br/>Camas: ${data.totalBeds}`;
+          } else {
+            tooltipContent += `Sin datos registrados`;
           }
-        });
+
+          this.tooltipElement.nativeElement.innerHTML = tooltipContent;
+          this.tooltipElement.nativeElement.style.display = 'block';
+          this.tooltipOverlay.setPosition(evt.coordinate);
+        } else {
+          this.tooltipElement.nativeElement.style.display = 'none';
+        }
+      } else {
+        this.tooltipElement.nativeElement.style.display = 'none';
+      }
+    });
+
+    // Handle map clicks to show info for municipality
+    this.map.on('singleclick', evt => {
+      const feature = this.map.forEachFeatureAtPixel(evt.pixel, (feature) => feature);
+
+      if (feature) {
+        const props = feature.getProperties();
+        if (props['muncodigo']) {
+          const munId = parseInt(props['muncodigo'], 10);
+          const data = this.municipalityData.get(munId);
+
+          if (data && data.sedes.length > 0) {
+            // Open dialog with the list of sedes
+            this.dialog.open(SedeInfoComponent, {
+              data: {
+                props: data.sedes // Pass the array of sede properties
+              }
+            });
+          }
+        }
       }
     });
   }
@@ -134,6 +230,17 @@ export class MapViewComponent implements OnInit, AfterViewInit {
       this.municipalities = res || [];
       // initially no region selected -> show all
       this.municipalitiesFiltered = this.municipalities;
+
+      // Populate municipality -> region map
+      this.municipalities.forEach(m => {
+        if (m.HealthRegion && m.HealthRegion.id) {
+          this.municipalityRegionMap.set(m.id, m.HealthRegion.id);
+        }
+      });
+      // Refresh layer style to apply colors now that we have the map
+      if (this.layerDepartamento) {
+        this.layerDepartamento.changed();
+      }
     });
     this.mapDataService.getBedTypes().subscribe((res: any) => this.bedTypes = res || []);
     this.mapDataService.getServices().subscribe((res: any) => this.services = res || []);
@@ -211,47 +318,55 @@ export class MapViewComponent implements OnInit, AfterViewInit {
 
   private loadSedes(): void {
     this.mapDataService.getSedesGeoJSON(this.filters).subscribe((geojson: any) => {
-      const format = new GeoJSON();
-      let finalFeatures: Feature[] = [];
-  
+      // Clear previous aggregation
+      this.municipalityData.clear();
+
       if (geojson && geojson.features) {
-        const sedeFeatures = format.readFeatures(geojson, {
-          featureProjection: this.map.getView().getProjection()
-        });
-  
+        const format = new GeoJSON();
+        // We read features just to access properties easily, though raw iteration is also fine.
+        // However, we don't add them to the map.
+        const sedeFeatures = format.readFeatures(geojson);
+
         sedeFeatures.forEach(sedeFeature => {
-          const properties = sedeFeature.getProperties();
-          const services = properties['services'] || [];
-          const sedeGeometry = sedeFeature.getGeometry();
-  
-          if (sedeGeometry) {
-            if (services.length > 0) { 
-                // Create a new feature for each service
-                const serviceProps = { ...properties };
-                const serviceFeature = new Feature(serviceProps);
-                serviceFeature.setGeometry(sedeGeometry.clone()); // CLONE THE GEOMETRY HERE
-                finalFeatures.push(serviceFeature);
-            } else {
-              // If a sede has no services, still show it as a single point.
-              // Also clone the geometry here to ensure independence if this feature is later spiderfied
-              const clonedSedeFeature = sedeFeature.clone();
-              clonedSedeFeature.setGeometry(sedeGeometry.clone());
-              finalFeatures.push(clonedSedeFeature);
+          const props = sedeFeature.getProperties();
+          const municipality = props['municipality'];
+
+          if (municipality && municipality.id) {
+            const munId = municipality.id;
+
+            if (!this.municipalityData.has(munId)) {
+              this.municipalityData.set(munId, { totalServices: 0, totalBeds: 0, sedes: [] });
             }
+
+            const data = this.municipalityData.get(munId)!;
+
+            // Aggregate Services
+            const services = props['services'] || [];
+            // Assuming we count total services offered (sum of services list length for each sede)
+            // Or distinct services? User said "suma de los servicios", usually means total count.
+            data.totalServices += services.length;
+
+            // Aggregate Beds
+            const bedCounts = props['bedCounts'] || [];
+            let bedsInSede = 0;
+            bedCounts.forEach((b: any) => {
+              bedsInSede += (b.initial_count || 0);
+            });
+            data.totalBeds += bedsInSede;
+
+            // Add sede to list
+            data.sedes.push(props);
           }
         });
       }
-  
-      const processedFeatures = finalFeatures;
-  
-      const source = this.sedeLayer.getSource() as VectorSource;
-      source.clear(true);
-      source.addFeatures(processedFeatures);
-  
-      if (processedFeatures.length > 0) {
-        const extent = source.getExtent();
-        this.map.getView().fit(extent, { padding: [100, 100, 100, 100], duration: 1000, maxZoom: 15 });
-      }
+
+      // We do NOT add features to sedeLayer anymore.
+      this.sedeLayer.getSource()?.clear();
+
+      // Optional: Zoom to extent of filtered data? 
+      // Since we don't have points, we can't easily get extent of points. 
+      // We could calculate extent from municipality polygons if we had them linked, but simpler to leave view as is or zoom to region if selected.
+
     }, err => {
       console.error('Error cargando sedes', err);
     });

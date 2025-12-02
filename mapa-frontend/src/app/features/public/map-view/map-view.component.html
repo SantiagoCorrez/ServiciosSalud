@@ -1,32 +1,48 @@
-<div class="map-controls container mb-2">
+<!-- Floating Toggle Button -->
+<button class="btn-toggle-filters" (click)="toggleFilters()" title="Filtrar">
+	<i class="material-icons">filter_list</i>
+</button>
+
+<!-- Floating Filters Container -->
+<div class="map-controls container floating-filters" *ngIf="showFilters">
 	<div class="row g-2 align-items-end">
-		<div class="col-md-3">
+		<div class="col-md-12 mb-2">
+			<div class="d-flex justify-content-between align-items-center">
+				<h5 class="m-0">Filtros</h5>
+				<button type="button" class="btn-close" aria-label="Close" (click)="toggleFilters()"></button>
+			</div>
+		</div>
+		<div class="col-md-12">
 			<label>Región de salud</label>
-			<input class="form-control mb-1" placeholder="Buscar región..." [(ngModel)]="search.region" (input)="updateFilteredLists()" />
+			<input class="form-control mb-1" placeholder="Buscar región..." [(ngModel)]="search.region"
+				(input)="updateFilteredLists()" />
 			<select class="form-select" [(ngModel)]="filters.healthRegionId" (change)="onRegionChange()">
 				<option [ngValue]="null">Todas</option>
 				<option *ngFor="let r of healthRegionsFiltered" [ngValue]="r.id">{{ r.name }}</option>
 			</select>
 		</div>
-		<div class="col-md-3">
+		<div class="col-md-12">
 			<label>Municipio</label>
-			<input class="form-control mb-1" placeholder="Buscar municipio..." [(ngModel)]="search.municipality" (input)="updateFilteredLists()" />
+			<input class="form-control mb-1" placeholder="Buscar municipio..." [(ngModel)]="search.municipality"
+				(input)="updateFilteredLists()" />
 			<select class="form-select" [(ngModel)]="filters.municipalityId" (change)="onMunicipalityChange()">
 				<option [ngValue]="null">Todos</option>
 				<option *ngFor="let m of municipalitiesFiltered" [ngValue]="m.id">{{ m.name }}</option>
 			</select>
 		</div>
-		<div class="col-md-3">
+		<div class="col-md-12">
 			<label>Tipo de cama</label>
-			<input class="form-control mb-1" placeholder="Buscar tipo de cama..." [(ngModel)]="search.bedType" (input)="updateFilteredLists()" />
+			<input class="form-control mb-1" placeholder="Buscar tipo de cama..." [(ngModel)]="search.bedType"
+				(input)="updateFilteredLists()" />
 			<select class="form-select" [(ngModel)]="filters.bedTypeId" (change)="onFilterChange()">
 				<option [ngValue]="null">Todos</option>
 				<option *ngFor="let b of bedTypesFiltered" [ngValue]="b.id">{{ b.name }}</option>
 			</select>
 		</div>
-		<div class="col-md-3">
+		<div class="col-md-12">
 			<label>Servicio</label>
-			<input class="form-control mb-1" placeholder="Buscar servicio..." [(ngModel)]="search.service" (input)="updateFilteredLists()" />
+			<input class="form-control mb-1" placeholder="Buscar servicio..." [(ngModel)]="search.service"
+				(input)="updateFilteredLists()" />
 			<select class="form-select" [(ngModel)]="filters.serviceId" (change)="onFilterChange()">
 				<option [ngValue]="null">Todos</option>
 				<option *ngFor="let s of servicesFiltered" [ngValue]="s.id">{{ s.name }}</option>
@@ -36,3 +52,4 @@
 </div>
 
 <div #mapElement class="map-container"></div>
+<div #tooltip class="ol-tooltip"></div>

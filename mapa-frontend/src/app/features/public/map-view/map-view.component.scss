@@ -1,14 +1,15 @@
 // src/app/features/public/map-view/map-view.component.scss
 .map-container {
   width: 100%;
-  height: 90vh; // Ocupa casi toda la altura de la vista
+  height: 100vh; // Ocupa casi toda la altura de la vista
+  position: relative; // Ensure absolute children are relative to this
 }
 
 /* OpenLayers popup styling */
 .ol-popup {
   position: absolute;
   background-color: white;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   padding: 15px;
   border-radius: 10px;
   border: 1px solid #ccc;
@@ -16,7 +17,9 @@
   left: -50px;
   min-width: 200px;
 }
-.ol-popup:after, .ol-popup:before {
+
+.ol-popup:after,
+.ol-popup:before {
   top: 100%;
   border: solid transparent;
   content: " ";
@@ -25,14 +28,74 @@
   position: absolute;
   pointer-events: none;
 }
+
 .ol-popup:after {
   border-top-color: white;
   border-width: 10px;
   left: 48px;
 }
+
 .ol-popup-closer {
   text-decoration: none;
   position: absolute;
   top: 2px;
   right: 8px;
+}
+
+/* Tooltip styling */
+.ol-tooltip {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none; // Ensure mouse events pass through to the map
+  white-space: nowrap;
+  z-index: 1000;
+  transform: translate(-50%, -100%); // Center above cursor
+  margin-top: -10px;
+  display: none; // Hidden by default
+}
+
+/* Floating Filters */
+.btn-toggle-filters {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1000; // Above map
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #3388ff;
+  color: white;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #2266cc;
+  }
+
+  i {
+    font-size: 24px;
+  }
+}
+
+.floating-filters {
+  position: absolute;
+  top: 20px;
+  left: 80px; // Offset from button
+  width: 300px; // Fixed width for the panel
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000; // Above map
+  max-height: 80vh;
+  overflow-y: auto;
 }

@@ -119,21 +119,42 @@ export class MapViewComponent implements OnInit, AfterViewInit {
       style: (feature) => {
         const props = feature.getProperties();
         const munId = parseInt(props['muncodigo'], 10);
+
+        // If we have filters active (or at least one check if municipalityData is populated),
+        // we only color those that have data.
+        // If municipalityData is empty, it might mean initial load or no results. 
+        // But usually on initial load we might want to show all? 
+        // User request: "oculte los colores de los municipios que no devuelva informacion"
+        // This implies if they are not in the valid result set, they should be hidden/grey.
+
+        const hasData = this.municipalityData.has(munId);
         const regionId = this.municipalityRegionMap.get(munId);
 
-        let fillColor = 'rgba(255, 255, 255, 0.1)'; // Default transparent
-        if (regionId && REGION_COLORS[regionId]) {
-          fillColor = REGION_COLORS[regionId];
+        let fillColor = 'rgba(255, 255, 255, 0.1)'; // Default transparent/hidden
+        let strokeColor = 'rgba(0, 0, 0, 0.1)'; // Default faint border for context or hidden
+
+        if (hasData) {
+          if (regionId && REGION_COLORS[regionId]) {
+            fillColor = REGION_COLORS[regionId];
+          }
+          strokeColor = '#3388ff';
+        } else {
+          // Optional: make it totally invisible or just faint grey?
+          // User said "oculte los colores", implying no region color.
+          // We can leave a faint outline so the map isn't empty space.
+          fillColor = 'rgba(200, 200, 200, 0.1)';
+          strokeColor = 'rgba(200, 200, 200, 0.5)';
         }
 
         return new Style({
           stroke: new Stroke({
-            color: '#3388ff',
-            width: 2
+            color: strokeColor,
+            width: hasData ? 2 : 1
           }),
           fill: new Fill({
             color: fillColor
-          })
+          }),
+          zIndex: hasData ? 10 : 1 // Bring valid ones to front if overlap
         });
       }
     });
@@ -369,6 +390,65 @@ export class MapViewComponent implements OnInit, AfterViewInit {
 
     }, err => {
       console.error('Error cargando sedes', err);
+    }, () => {
+      // On Complete (or we can do it inside subscribe next block at the end)
+      // Refrescar estilos
+      if (this.layerDepartamento) {
+        this.layerDepartamento.changed();
+
+        // Calculate extent of filtered municipalities
+        const source = this.layerDepartamento.getSource();
+        if (source) {
+          const features = source.getFeatures();
+          let extent: any = null;
+          let hasFeatures = false;
+
+          features.forEach(f => {
+            const props = f.getProperties();
+            const mid = parseInt(props['muncodigo'], 10);
+            if (this.municipalityData.has(mid)) {
+              const geom = f.getGeometry();
+              if (geom) {
+                if (!extent) {
+                  extent = geom.getExtent();
+                } else {
+                  import('ol/extent').then(olExtent => {
+                    olExtent.extend(extent, geom.getExtent());
+                  });
+                  // Note: synchronous extend is native to the extent array usually in OL, 
+                  // but let's stick to safe import or manual logic if needed. 
+                  // Actually OpenLayers extent is just an array [minx, miny, maxx, maxy].
+                  // We can use a helper or just implicit logic. 
+                  // Simpler: Use the vector source's getExtent if we could filter the source... 
+                  // But we can't easily filter the source without removing features.
+                  // Let's do a manual extend loop, it's safer.
+                }
+                // Simple manual extend for [minx, miny, maxx, maxy]
+                // extent = [minx, miny, maxx, maxy]
+                if (extent) {
+                  const e2 = geom.getExtent();
+                  extent[0] = Math.min(extent[0], e2[0]);
+                  extent[1] = Math.min(extent[1], e2[1]);
+                  extent[2] = Math.max(extent[2], e2[2]);
+                  extent[3] = Math.max(extent[3], e2[3]);
+                }
+                hasFeatures = true;
+              }
+            }
+          });
+
+          if (hasFeatures && extent) {
+            this.map.getView().fit(extent, {
+              padding: [50, 50, 50, 50],
+              duration: 1000,
+              maxZoom: 14 // Prevent too deep zoom on single point/small muni
+            });
+          } else {
+            // If no data found, maybe zoom out to default?
+            // this.map.getView().animate({ center: fromLonLat([-74, 5]), zoom: 6, duration: 1000 });
+          }
+        }
+      }
     });
   }
 

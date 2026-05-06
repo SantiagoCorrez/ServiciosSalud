@@ -17,6 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
+            "baseHref": "/servicios-salud/",
             "outputPath": "dist/mapa-frontend",
             "index": "src/index.html",
             "browser": "src/main.ts",

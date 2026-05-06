@@ -6,7 +6,7 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Copy the pre-built frontend
-COPY mapa-frontend/dist/mapa-frontend/browser .
+COPY mapa-frontend/dist/mapa-frontend/browser ./servicios-salud
 
 # Copy the Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf

@@ -4,7 +4,7 @@ services:
   gateway:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - "80:8050"
       - "443:443"
     volumes:
       - ./gateway.conf:/etc/nginx/conf.d/default.conf:ro
@@ -20,7 +20,7 @@ services:
     image: servicios-salud-frontend
     # Solo exponer internamente (o mapear a otro puerto si es para debug)
     ports:
-      - "8080:80"
+      - "8080:8050"
     depends_on:
       - servicios-backend
     restart: unless-stopped

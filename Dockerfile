@@ -11,8 +11,8 @@ COPY mapa-frontend/dist/mapa-frontend/browser ./servicios-salud
 # Copy the Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80
-EXPOSE 80
+# Expose port 8050
+EXPOSE 8050
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

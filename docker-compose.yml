@@ -68,7 +68,7 @@ services:
 
   medicos-app:
     build:
-      context: ../medicos
+      context: ../MedicoTerritorio
       dockerfile: Dockerfile
     image: medicos-salud-app
     ports:
